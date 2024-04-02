@@ -1,0 +1,60 @@
+{
+	"configurations" : 
+	[
+		{
+			"directories" : 
+			[
+				{
+					"build" : ".",
+					"jsonFile" : "directory-.-Debug-d0094a50bb2071803777.json",
+					"minimumCMakeVersion" : 
+					{
+						"string" : "3.26"
+					},
+					"projectIndex" : 0,
+					"source" : ".",
+					"targetIndexes" : 
+					[
+						0
+					]
+				}
+			],
+			"name" : "Debug",
+			"projects" : 
+			[
+				{
+					"directoryIndexes" : 
+					[
+						0
+					],
+					"name" : "_Discriminative_Dense_Neural_Network_Framework",
+					"targetIndexes" : 
+					[
+						0
+					]
+				}
+			],
+			"targets" : 
+			[
+				{
+					"directoryIndex" : 0,
+					"id" : "_Discriminative_Dense_Neural_Network_Framework::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-_Discriminative_Dense_Neural_Network_Framework-Debug-15edde3991cbd7252d0c.json",
+					"name" : "_Discriminative_Dense_Neural_Network_Framework",
+					"projectIndex" : 0
+				}
+			]
+		}
+	],
+	"kind" : "codemodel",
+	"paths" : 
+	{
+		"build" : "D:/Github Files/ Discriminative Dense Neural Network Framework/-Dense-Matrix-Driven-Discriminative-Network-Framework/cmake-build-debug",
+		"source" : "D:/Github Files/ Discriminative Dense Neural Network Framework/-Dense-Matrix-Driven-Discriminative-Network-Framework"
+	},
+	"version" : 
+	{
+		"major" : 2,
+		"minor" : 5
+	}
+}
