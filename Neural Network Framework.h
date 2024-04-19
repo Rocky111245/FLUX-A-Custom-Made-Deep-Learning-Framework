@@ -64,7 +64,7 @@ private:
 };
 
 Matrix* Neural_Layer_Maker(int neurones_In_First_Layer, int neurones_In_Second_Layer,Matrix inputMatrix);
-std::vector<Neural_Layer> Forward_Pass(std::initializer_list<int> layers, Matrix inputMatrix);
+void  Forward_Pass(std::vector<Neural_Layer>&neural_layers, std::initializer_list<int> layers, Matrix inputMatrix);
 void Back_Propagation(std::vector<Neural_Layer>&neural_layers, std::initializer_list<int> layers,Matrix output);
 void Matrix_Transpose_v2(Matrix *final, const Matrix original) ;
 void Matrix_Multiply_V2(Matrix *finalMatrix, Matrix firstMatrix, Matrix secondMatrix);
@@ -75,6 +75,9 @@ void Matrix_Scalar_Multiply(Matrix &matrix, float scalar);
 float Matrix_Sum_All_Elements(const Matrix& matrix);
 void Matrix_Power(Matrix& matrix, float power);
 void Matrix_Hadamard_Product(Matrix *result, const Matrix *a, const Matrix *b);
+void Matrix_Absolute(Matrix &matrix);
+void Learn(std::vector<Neural_Layer>&neural_layers, std::initializer_list<int> layers,double learning_rate, int iterations);
+std::vector<Neural_Layer> Form_Network(std::initializer_list<int> layers, Matrix inputMatrix);
 
 
 

@@ -123,18 +123,24 @@ static void displayLayerDetails(const std::vector<Neural_Layer>& layers, int ind
 }
 
 
+std::vector<Neural_Layer> Form_Network(std::initializer_list<int> layers, Matrix inputMatrix){
+    // Convert initializer_list to vector for easier access
+    std::vector<int> layerSizes = layers;
+    size_t size = layerSizes.size();
+    std::cout<<"Size of Neural Layer: "<<size<<std::endl;// This equals 3
+    std::vector<Neural_Layer> neural_layers(size);//layers will always be n-1 because the input layer is not considered
+    return neural_layers;
+};
 
 
 //this function will iterate the Neural_Layer_Maker function on the number of networks I want to make
-std::vector<Neural_Layer> Forward_Pass(std::initializer_list<int> layers, Matrix inputMatrix)
+void Forward_Pass(std::vector<Neural_Layer>&neural_layers, std::initializer_list<int> layers, Matrix inputMatrix)
 {
     // Convert initializer_list to vector for easier access
     std::vector<int> layerSizes = layers;
     size_t size = layerSizes.size();
     std::cout<<"Size of Neural Layer: "<<size<<std::endl;// This equals 3
 
-    std::vector<Neural_Layer> neural_layers(size);//layers will always be n-1 because the input layer is not considered
-    // Initialize input matrix for the first layer
     Matrix currentInput = inputMatrix;
 
     // Iterate over each layer
@@ -164,7 +170,6 @@ std::vector<Neural_Layer> Forward_Pass(std::initializer_list<int> layers, Matrix
         currentInput = neural_layers[i].activated_output_matrix;
     }
 
-    return neural_layers;
 }
 
 
@@ -201,24 +206,14 @@ void Back_Propagation(std::vector<Neural_Layer>&neural_layers, std::initializer_
     std::cout<<"Multiplied dC_dy Matrix by 2/N"<<std::endl;
     Matrix_Display(neural_layers[size-1].dC_dy_matrix);
 
-//
-//    //we need to get this dynamically, this is for testing
-//    float dC_dY=neural_layers[size-1].dC_dY; //last layer
-//    std::cout<<"float value: "<<neural_layers[size-1].dC_dY<<std::endl;
-
-//    int neurone_in_front_layer;
-     neural_layers[size-1].dC_da_matrix=neural_layers[size-1].dC_dy_matrix;//it is equal since the derivative of the output to the output itself is exactly 1
-//     neural_layers[size-1].dC_da_matrix.data[0]= dC_dY * 1;//multiplied by 1 since dY_dA's been 1 since no activation
-    int i=(int)size-1;  //last layer-->2
-//    int j=(int)size-2;  //before last layer-->1
-//    std::cout<<neuronesInCurrentLayer[0]<<std::endl;
-//    std::cout<<neuronesInCurrentLayer[1]<<std::endl;
-//    std::cout<<neuronesInCurrentLayer[2]<<std::endl;
+    std::cout<<" dh_da Matrix of last layer"<<std::endl;
+    Matrix_Display(neural_layers[size-1].dh_da_matrix);
+    Matrix_Hadamard_Product(&neural_layers[size-1].dC_da_matrix,&neural_layers[size-1].dC_dy_matrix,&neural_layers[size-1].dh_da_matrix);//it is equal since the derivative of the output to the output itself is exactly 1
+    Matrix_Absolute(neural_layers[size-1].dC_da_matrix);
+    int last_layer= (int)size - 1;  //last layer-->2
     Matrix_Display(neural_layers[size-1].dC_da_matrix);
-//
-//
-//
-    for (int layer_number=i;layer_number>=0;layer_number--)
+
+    for (int layer_number=last_layer; layer_number >= 0; layer_number--)
     {
         std::cout << "---------------------------" << std::endl;
         std::cout << "Layer Number: " << layer_number << std::endl;
@@ -244,14 +239,12 @@ void Back_Propagation(std::vector<Neural_Layer>&neural_layers, std::initializer_
             Matrix_Multiply(&temp_delta, neural_layers[layer_number].dC_da_matrix, n);
             Matrix_Display(temp_delta);
 
-            Matrix_Multiply(&neural_layers[layer_number - 1].dC_da_matrix, temp_delta, neural_layers[layer_number - 1].dh_da_matrix);
-
+            Matrix_Hadamard_Product(&neural_layers[layer_number - 1].dC_da_matrix, &temp_delta, &neural_layers[layer_number - 1].dh_da_matrix);
+            std::cout << "------HADAMARD PRODUCT-------- " << std::endl;
+            Matrix_Display(neural_layers[layer_number - 1].dC_da_matrix);
             std::cout << "------OPERATION 1 ENDED-MULTIPLY-------- " << std::endl;
         }
         Matrix_Free(&n);
-
-
-
 
         std::cout << "dC_da Matrix--Previous Layer after Operation 1 TARGETTED: " << std::endl;
         Matrix_Display(neural_layers[layer_number - 1].dC_da_matrix);
@@ -286,15 +279,50 @@ void Back_Propagation(std::vector<Neural_Layer>&neural_layers, std::initializer_
 
 }
 
+
+
+
+//void Learn(std::vector<Neural_Layer>&neural_layers, std::initializer_list<int> layers,double learning_rate, int iterations){
+//
+//
+//    for (int i=0;i<iterations;i++){
+//        std::cout<<"Start of iteration"<<i<<std::endl;
+//        Forward_Pass(neural_layers,neuronesInCurrentLayer);
+//        Back_Propagation(neural_layers,neuronesInCurrentLayer,learning_rate);
+//        std::cout<<"End of iteration"<<i<<std::endl;
+//
+//
+//
+//
+//    }
+//
+//
+//
+//}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 void Display_Gradients(const std::vector<Neural_Layer>&neural_layers, std::initializer_list<int> layers){
     // Convert initializer_list to vector for easier access
     // Assuming 'layers' is your std::initializer_list<int>
-    std::vector<int> neuronesInCurrentLayer(layers.begin() + 1, layers.end());
-    size_t size = neuronesInCurrentLayer.size();
+    std::vector<int> layerSizes = layers;
+    size_t size = layerSizes.size();
     std::cout<<"Size of Neural Layer: "<<size<<std::endl;// This equals 3
 
-    int i=(int)size-1;  //last layer-->2
-    for (int layer_number=i;layer_number>=0;layer_number--){
+
+    for (int layer_number=0;layer_number<size;layer_number++){
 
         std::cout<<"---Layer Number---"<<layer_number<<std::endl;
         std::cout<<"dC/dw"<<std::endl;
@@ -433,3 +461,13 @@ void Matrix_Hadamard_Product(Matrix *result, const Matrix *a, const Matrix *b) {
         }
     }
 }
+
+void Matrix_Absolute(Matrix &matrix) {
+    for (int i = 0; i < matrix.row; ++i) {
+        for (int j = 0; j < matrix.column; ++j) {
+            int index = i * matrix.column + j;  // Calculate the index for a 1D array representation of the matrix
+            matrix.data[index] = std::abs(matrix.data[index]);  // Apply the abs function to each element
+        }
+    }
+}
+

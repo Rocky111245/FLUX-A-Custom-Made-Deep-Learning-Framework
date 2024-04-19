@@ -24,9 +24,14 @@ int main(){
     Matrix output= Matrix_Maker_2DArray(3,4,1,2,&data[0][0]);
     Matrix_Display(output);
 
-    std::vector g= Forward_Pass({3, 2, 1}, inputs);
-    Back_Propagation(g, {3, 2, 1},output);
-//    Display_Gradients(g,{4,3,2,1});
+    // Assuming 'inputs' is already defined and is a Matrix
+    std::vector<Neural_Layer> network = Form_Network({3, 2, 1}, inputs);
+
+
+
+    Forward_Pass(network,{3, 2, 1}, inputs);
+    Back_Propagation(network, {3, 2, 1},output);
+    Display_Gradients(network,{3, 2, 1});
 }
 
 
