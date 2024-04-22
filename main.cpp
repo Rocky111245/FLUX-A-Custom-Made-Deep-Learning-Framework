@@ -25,13 +25,16 @@ int main(){
     Matrix_Display(output);
 
     // Assuming 'inputs' is already defined and is a Matrix
-    std::vector<Neural_Layer> network = Form_Network({3, 2, 1}, inputs);
+    std::vector<Neural_Layer> network = Form_Network({ 3, 1}, inputs);
+    float mse;
+//    Learn(network,{ 2, 1}, inputs, output,0.001, 2);
 
 
-
-    Forward_Pass(network,{3, 2, 1}, inputs);
-    Back_Propagation(network, {3, 2, 1},output);
-    Display_Gradients(network,{3, 2, 1});
+    Forward_Pass(network,{3, 1}, inputs);
+    Back_Propagation(network, {3,1},output,mse);
+    Display_Gradients(network,{3, 1});
+    std::cout<<std::endl;
+    std::cout<<mse<<std::endl;
 }
 
 
