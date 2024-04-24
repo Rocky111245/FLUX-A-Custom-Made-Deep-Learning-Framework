@@ -1,7 +1,6 @@
 #include "Neural Network Framework.h"
 
 
-
 // Default constructor
 Neural_Layer::Neural_Layer() {
     // Default constructor body (can be empty or initialized here)
@@ -13,7 +12,7 @@ Neural_Layer::Neural_Layer(int neuronsInFirstLayer, int neuronsInSecondLayer, co
           input_matrix(inputMatrix),
           weights_matrix(Matrix_Create_Random(neuronsInFirstLayer, neuronsInSecondLayer, 2)),
 //          transposed_weights_matrix(Matrix_Create_Zero(weights_matrix.column, weights_matrix.row)),
-          bias_matrix(Matrix_Create_Random(1, neuronsInSecondLayer, 2)),
+          bias_matrix(Matrix_Create_Random(1, neuronsInSecondLayer, 1)),
           weight_and_input_matrix(Matrix_Create_Zero(inputMatrix.row, weights_matrix.column)),
           weight_input_bias_matrix(Matrix_Create_Zero(inputMatrix.row, weights_matrix.column)),
           activated_output_matrix(Matrix_Create_Zero(inputMatrix.row, weights_matrix.column)),
@@ -27,13 +26,13 @@ void Neural_Layer::Compute_Weighted_Sum() {
 //    transposed_weights_matrix= Matrix_Create_Zero(weights_matrix.column,weights_matrix.row);
 //    Matrix_Transpose(&transposed_weights_matrix,weights_matrix);
     Matrix_Multiply(&weight_and_input_matrix, input_matrix,weights_matrix);
-    Matrix_Display(bias_matrix);
-    Matrix_Display(dC_db_matrix);
+//    Matrix_Display(bias_matrix);
+//    Matrix_Display(dC_db_matrix);
     Matrix Broadcasted_Bias= Matrix_Create_Zero(weight_and_input_matrix.row,weight_and_input_matrix.column);
     Matrix_Broadcast(&Broadcasted_Bias,bias_matrix,weight_and_input_matrix.row,weight_and_input_matrix.column);
     Matrix_Add(&weight_input_bias_matrix, weight_and_input_matrix, Broadcasted_Bias);
-    std::cout<<"Broadcasted Bias"<<std::endl;
-    Matrix_Display(Broadcasted_Bias);
+//    std::cout<<"Broadcasted Bias"<<std::endl;
+//    Matrix_Display(Broadcasted_Bias);
     Matrix_Free(&Broadcasted_Bias);
 }
 
@@ -101,7 +100,6 @@ float Neural_Layer::Swish(float x) {
 float Neural_Layer::Tanh(float x) {
     return std::tanh(x);
 }
-
 static void displayLayerDetails(const std::vector<Neural_Layer>& layers, int index)
 {
     std::cout<<"Layer Number: "<<index<<std::endl;
@@ -128,245 +126,197 @@ static void displayLayerDetails(const std::vector<Neural_Layer>& layers, int ind
 }
 
 
-std::vector<Neural_Layer> Form_Network(std::initializer_list<int> layers, Matrix inputMatrix){
+std::vector<Neural_Layer> Form_Network(std::initializer_list<int> layers, Matrix inputMatrix) {
     // Convert initializer_list to vector for easier access
     std::vector<int> layerSizes = layers;
     size_t size = layerSizes.size();
-//    std::cout<<"Size of Neural Layer: "<<size<<std::endl;// This equals 3
+    std::cout<<"Size of Neural Layer: "<< size<<std::endl;
+    Matrix currentInput=inputMatrix;
+
     std::vector<Neural_Layer> neural_layers(size);//layers will always be n-1 because the input layer is not considered
+    for (int i=0;i<size;i++){
+        // Create a neural layer with the appropriate size and input
+        neural_layers[i]= Neural_Layer(currentInput.column, layerSizes[i], currentInput);
+        currentInput= Matrix_Create_Zero(inputMatrix.row,layerSizes[i]);
+    }
     return neural_layers;
 };
 
 
 //this function will iterate the Neural_Layer_Maker function on the number of networks I want to make
-void Forward_Pass(std::vector<Neural_Layer>&neural_layers, std::initializer_list<int> layers, Matrix inputMatrix)
-{
+void Forward_Pass(std::vector<Neural_Layer> &neural_layers, std::initializer_list<int> layers, Matrix inputMatrix) {
     // Convert initializer_list to vector for easier access
     std::vector<int> layerSizes = layers;
     size_t size = layerSizes.size();
-    std::cout<<"Size of Neural Layer: "<<size<<std::endl;// This equals 3
+
 
     Matrix currentInput = inputMatrix;
 
     // Iterate over each layer
     for (size_t i = 0; i < size; i++) {
-        // Create a neural layer with the appropriate size and input
-        neural_layers[i]= Neural_Layer(currentInput.column, layerSizes[i], currentInput);
 
-        printf("Size: %zu\n", neural_layers.size()); // Print the size of the vectorNeural_Node.size();
-        printf("Capacity: %zu\n", neural_layers.capacity()); // Print the capacity of the vectorNeural_Node.capacity();
-        std::cout<<"--------------"<<std::endl;
+        // Print the size of the vectorNeural_Node.size();
+        // Print the capacity of the vectorNeural_Node.capacity();
         // Compute weighted sum and Activate the layer
         neural_layers[i].Compute_Weighted_Sum();
         neural_layers[i].Activate();
         neural_layers[i].Dh_Da_Function();
 
-        if(i==size-1){
+        if (i == size - 1) {
             neural_layers[i].Activate_Last();
-        }
-        else{
+        } else {
             neural_layers[i].Activate();
         }
-//         Display outputs for debugging or analysis
-        displayLayerDetails(neural_layers, i);
-        std::cout<<"---------END OF LAYER--------------------"<<std::endl;
-
         // Set the output of this layer as the input for the next layer
-        currentInput = neural_layers[i].activated_output_matrix;
+        if(i<size-1){
+            currentInput = neural_layers[i].activated_output_matrix;
+            neural_layers[i+1].input_matrix=currentInput;
+//            std::cout<<"Input to next Layer: "<< i+1<<std::endl;
+//            Matrix_Display(currentInput);
+        }
+//        displayLayerDetails(neural_layers,i);
+
+
+
     }
 
 }
 
 
 //suppose a fully connected dense neural network
-void Back_Propagation(std::vector<Neural_Layer>&neural_layers, std::initializer_list<int> layers,Matrix output,float &mean_squared_error){
+void Back_Propagation(std::vector<Neural_Layer> &neural_layers, std::initializer_list<int> layers, Matrix output, float &mean_squared_error) {
 
     // Convert initializer_list to vector for easier access
 
     // Assuming 'layers' is the std::initializer_list<int>
     std::vector<int> neuronesInCurrentLayer(layers);
     size_t size = neuronesInCurrentLayer.size();
-    std::cout<<"Size of Neural Layer: "<<size<<std::endl;// This equals 3
-    neural_layers[size-1].Initialize_dC_dy_Matrix();
-    neural_layers[size-1].Initialize_Cost_Function_Matrix();
-    std::cout<<"Initialized dC_dy Matrix"<<std::endl;
-    Matrix_Display(neural_layers[size-1].dC_dy_matrix);
-    std::cout<<"Initialized Cost Function Matrix"<<std::endl;
-    Matrix_Display(neural_layers[size-1].C);
-    Matrix_Subtract(&neural_layers[size-1].C,neural_layers[size-1].activated_output_matrix,output);
-    std::cout<<"Subtracted the output matrix from last activation function to get the C Matrix below"<<std::endl;
-    Matrix_Display(neural_layers[size-1].C);
-    Matrix_Power(neural_layers[size-1].C,2);
-    std::cout<<"Raised the C Matrix to the power of 2"<<std::endl;
-    Matrix_Display(neural_layers[size-1].C);
-    mean_squared_error=Matrix_Sum_All_Elements(neural_layers[size-1].C);
-    std::cout<<"Sum of all elements of C Matrix: "<<mean_squared_error<<std::endl;
-    mean_squared_error=mean_squared_error/4.0f;
-    std::cout<<"Mean Square Error: "<<mean_squared_error<<std::endl;
-    Matrix_Subtract(&neural_layers[size-1].dC_dy_matrix,neural_layers[size-1].activated_output_matrix,output);
-    std::cout<<"Subtracted the output matrix from last activation function to get the dC_dy Matrix below"<<std::endl;
-    Matrix_Display(neural_layers[size-1].dC_dy_matrix);
-    Matrix_Scalar_Multiply(neural_layers[size-1].dC_dy_matrix,(2.0f / 4.0f));
-    std::cout<<"Multiplied dC_dy Matrix by 2/N"<<std::endl;
-    Matrix_Display(neural_layers[size-1].dC_dy_matrix);
 
-    std::cout<<" dh_da Matrix of last layer"<<std::endl;
-    Matrix_Display(neural_layers[size-1].dh_da_matrix);
-    Matrix_Hadamard_Product(neural_layers[size-1].dC_da_matrix,neural_layers[size-1].dC_dy_matrix,neural_layers[size-1].dh_da_matrix);
-    Matrix_Absolute(neural_layers[size-1].dC_da_matrix);
-    int last_layer= (int)size - 1;  //last layer-->2
-    std::cout<<" dC_da Matrix of last layer"<<std::endl;
-    Matrix_Display(neural_layers[size-1].dC_da_matrix);
+    neural_layers[size - 1].Initialize_dC_dy_Matrix();
+    neural_layers[size - 1].Initialize_Cost_Function_Matrix();;
+    Matrix_Subtract_V2(neural_layers[size - 1].C, neural_layers[size - 1].activated_output_matrix, output);
+    Matrix_Power(neural_layers[size - 1].C, 2);
+    mean_squared_error = Matrix_Sum_All_Elements(neural_layers[size - 1].C);
+    mean_squared_error = mean_squared_error / 4.0f;
+    Matrix_Subtract_V2(neural_layers[size - 1].dC_dy_matrix, neural_layers[size - 1].activated_output_matrix, output);;
+    Matrix_Scalar_Multiply(neural_layers[size - 1].dC_dy_matrix, (2.0f / 4.0f));;
 
-    for (int layer_number=last_layer; layer_number >= 0; layer_number--)
-    {
-        std::cout << "---------------------------" << std::endl;
-        std::cout << "Layer Number: " << layer_number << std::endl;
-        std::cout << "---------------------------" <<  std::endl;
+    Matrix_Hadamard_Product(neural_layers[size - 1].dC_da_matrix, neural_layers[size - 1].dC_dy_matrix, neural_layers[size - 1].dh_da_matrix);
+    Matrix_Absolute(neural_layers[size - 1].dC_da_matrix);
+    int last_layer = (int) size - 1;  //last layer-->2
 
-        std::cout << "dC_da Matrix--Previous Layer before Operation 1-TARGETTED: " << std::endl;
-        Matrix_Display(neural_layers[layer_number - 1].dC_da_matrix);
-        std::cout << "dC_da Matrix--Current Layer involved in Operation 1: " << std::endl;
-        Matrix_Display(neural_layers[layer_number].dC_da_matrix);
-        std::cout << "Weights Matrix--Current Layer involved in Operation 1: " << std::endl;
-        Matrix_Display(neural_layers[layer_number].weights_matrix);
+    for (int layer_number = last_layer; layer_number >= 0; layer_number--) {
 
-        std::cout << "------TRANSPOSE OPERATION 1 STARTED-------- " << std::endl;
+
         Matrix n = Matrix_Create_Zero(neural_layers[layer_number].weights_matrix.column, neural_layers[layer_number].weights_matrix.row);
         Matrix_Transpose_v2(&n, neural_layers[layer_number].weights_matrix);
-        std::cout << "------TRANSPOSE OPERATION 1 ENDED-------- " << std::endl;
-        std::cout << "Weights Matrix--Current Layer after Operation 1 (Transposed): " << std::endl;
-        Matrix_Display(n);
 
         if (layer_number != 0) {
-            std::cout << "------OPERATION 1 STARTED-MULTIPLY-------- " << std::endl;
-            Matrix temp_delta= Matrix_Create_Zero(neural_layers[layer_number].dC_da_matrix.row,n.column);
+            Matrix temp_delta = Matrix_Create_Zero(neural_layers[layer_number].dC_da_matrix.row, n.column);
             Matrix_Multiply(&temp_delta, neural_layers[layer_number].dC_da_matrix, n);
-            Matrix_Display(temp_delta);
 
             Matrix_Hadamard_Product(neural_layers[layer_number - 1].dC_da_matrix, temp_delta, neural_layers[layer_number - 1].dh_da_matrix);
-            std::cout << "------HADAMARD PRODUCT-------- " << std::endl;
-            Matrix_Display(neural_layers[layer_number - 1].dC_da_matrix);
-            std::cout << "------OPERATION 1 ENDED-MULTIPLY-------- " << std::endl;
         }
         Matrix_Free(&n);
 
-        std::cout << "dC_da Matrix--Previous Layer after Operation 1 TARGETTED: " << std::endl;
-        Matrix_Display(neural_layers[layer_number - 1].dC_da_matrix);
 
-        std::cout << "Input Matrix--Current Layer involved in Transpose Operation 1: " << std::endl;
-        Matrix_Display(neural_layers[layer_number].input_matrix);
-        std::cout << "------TRANSPOSE OPERATION 2 STARTED-MULTIPLY-------- " << std::endl;
         Matrix m = Matrix_Create_Zero(neural_layers[layer_number].input_matrix.column, neural_layers[layer_number].input_matrix.row);
         Matrix_Transpose_v2(&m, neural_layers[layer_number].input_matrix);
-        std::cout << "------TRANSPOSE OPERATION 2 ENDED-------- " << std::endl;
 
 
-
-        std::cout << "After Transpose: Matrix M " << std::endl;
-        Matrix_Display(m);
-
-
-        std::cout << "Current Layer Global Derivative dC/dW before Operation 2-TARGETTED" << std::endl;
-        Matrix_Display(neural_layers[layer_number].dC_dw_matrix);
-        std::cout << "Current Layer dC_da involved in Operation 2" << std::endl;
-        Matrix_Display(neural_layers[layer_number].dC_da_matrix);
-
-        std::cout << "------ OPERATION 2 STARTED (MULTIPLY) -------- " << std::endl;
         Matrix_Multiply(&neural_layers[layer_number].dC_dw_matrix, m, neural_layers[layer_number].dC_da_matrix);
-
         Matrix_Free(&m);
 
-        std::cout << "------ OPERATION 2 ENDED (MULTIPLY) -------- " << std::endl;
-        std::cout<<"Current Layer dC_db before operation"<<std::endl;
-        Matrix_Display(neural_layers[layer_number].dC_db_matrix);
+        // Averaging the gradients by the batch size (assuming batch size is 4)
+        Matrix_Scalar_Multiply(neural_layers[layer_number].dC_dw_matrix, 1.0f / 4.0f);
+
         Matrix_Sum_Columns(neural_layers[layer_number].dC_db_matrix, neural_layers[layer_number].dC_da_matrix);
-        std::cout<<"Current Layer dC_db after operation"<<std::endl;
-        Matrix_Display(neural_layers[layer_number].dC_db_matrix);
+
+        // Averaging dC_db for the batch
+        Matrix_Scalar_Multiply(neural_layers[layer_number].dC_db_matrix, 1.0f / 4.0f);
 
 
-        std::cout << "Current Layer Global Derivative dC/dW after Operation 2-TARGETTED" << std::endl;
-        Matrix_Display(neural_layers[layer_number].dC_dw_matrix);
     }
-    std::cout<<"Mean Squared Error from backProp: "<<mean_squared_error<<std::endl;
-
 
 }
 
 
-
-
-void Learn(std::vector<Neural_Layer>&neural_layers, std::initializer_list<int> layers,Matrix input_matrix, Matrix output_matrix, float learning_rate, int iterations){
-    // Convert initializer_list to vector for easier access
-    // Assuming 'layers' is your std::initializer_list<int>
+void Learn(std::vector<Neural_Layer> &neural_layers, std::initializer_list<int> layers, Matrix input_matrix, Matrix output_matrix, float learning_rate, int iterations) {
     std::vector<int> layerSizes = layers;
     size_t size = layerSizes.size();
-    std::cout<<"Size of Neural Layer: "<<size<<std::endl;// This equals 3
-    float mean_squared_error=0.0f;
+
+    // Perform a forward pass and backpropagation to calculate initial MSE
+    Forward_Pass(neural_layers, layers, input_matrix);
+    float mean_squared_error;
+    Back_Propagation(neural_layers, layers, output_matrix, mean_squared_error);
+    float initial_mse = mean_squared_error;
+
+    std::cout << "Initial MSE: " << initial_mse << std::endl;
 
 
+    for (int i = 0; i < iterations; i++) {
+        Forward_Pass(neural_layers, layers, input_matrix);
+        Back_Propagation(neural_layers, layers, output_matrix, mean_squared_error);
+        // Logging after each iteration
+        std::cout << "Iteration " << i + 1 << " MSE: " << mean_squared_error << std::endl;
 
-    for (int i=0;i<iterations;i++){
-        Forward_Pass(neural_layers,layers,input_matrix);
-        if(i==0) std::cout<<"MSE before operation: \n"<<mean_squared_error<<std::endl;
-//        std::cout<<"MSE before operation: \n"<<mean_squared_error<<iterations<<std::endl;
-        Back_Propagation(neural_layers,layers,output_matrix,mean_squared_error);
-        if(i==0) std::cout<<"MSE after operation: \n"<<mean_squared_error<<std::endl;
-//        std::cout<<"MSE after operation: \n"<<mean_squared_error<<iterations<< std::endl;
-        for(int j=0;j<size;j++){
+        for (size_t j = 0; j < size; j++) {
+//            std::cout<<"Display Weights"<<std::endl;
+//            Matrix_Display(neural_layers[j].weights_matrix);
+//            std::cout<<"Display Bias"<<std::endl;
+//            Matrix_Display(neural_layers[j].bias_matrix);
+//            std::cout<<"Display Weight Derivatives"<<std::endl;
+//            Matrix_Display(neural_layers[j].dC_dw_matrix);
+//            std::cout<<"Display Bias Derivatives"<<std::endl;
+//            Matrix_Display(neural_layers[j].dC_db_matrix);
 
-            Matrix temp= Matrix_Create_Zero(neural_layers[j].weights_matrix.row,neural_layers[j].weights_matrix.column);
-            std::cout<<"Learning Matrix Before Operation: "<<std::endl;
-            Matrix_Display(temp);
-            std::cout<<"Unaffected Matrix Before Operation: "<<std::endl;
-            Matrix_Display(neural_layers[j].dC_dw_matrix);
-            Matrix_Copy(&temp,&neural_layers[j].dC_dw_matrix);
-            Matrix_Scalar_Multiply(temp,learning_rate);
-            std::cout<<"Learning Matrix After Operation: "<<std::endl;
-            Matrix_Display(temp);
-            std::cout<<"Unaffected Matrix After Operation: "<<std::endl;
-            Matrix_Display(neural_layers[j].dC_dw_matrix);
-            std::cout<<"Display Weights Before Operation"<<std::endl;
-            Matrix_Display(neural_layers[j].weights_matrix);
-            Matrix_Subtract(&neural_layers[j].weights_matrix,neural_layers[j].weights_matrix,temp);
-            std::cout<<"Display Weights After Operation"<<std::endl;
-            Matrix_Display(neural_layers[j].weights_matrix);
-            Matrix_Free(&temp);
+            // Update weights
+            Matrix_Scalar_Multiply(neural_layers[j].dC_dw_matrix, learning_rate);
+//            std::cout<<"Display Weight Derivatives after multiply"<<std::endl;
+//            Matrix_Display(neural_layers[j].dC_dw_matrix);
+            Matrix_Subtract_V2(neural_layers[j].weights_matrix, neural_layers[j].weights_matrix, neural_layers[j].dC_dw_matrix);
+
+            // Update biases
+            Matrix_Scalar_Multiply(neural_layers[j].dC_db_matrix, learning_rate);
+            Matrix_Subtract_V2(neural_layers[j].bias_matrix, neural_layers[j].bias_matrix, neural_layers[j].dC_db_matrix);
+
+            // Reset gradients
+            Matrix_Fill(neural_layers[j].dC_dw_matrix, 0);
+            Matrix_Fill(neural_layers[j].dC_db_matrix, 0);
+//
+//            // Logging layer update information
+//            std::cout << "Iteration " << i + 1 << ", Layer " << j + 1 << ", Weight and Bias updated." << std::endl;
+//            std::cout<<"Display Weights after change"<<std::endl;
+//            Matrix_Display(neural_layers[j].weights_matrix);
+//            std::cout<<"Display Bias after change"<<std::endl;
+//            Matrix_Display(neural_layers[j].bias_matrix);
+//            std::cout<<"Display Weight Derivatives after change"<<std::endl;
+//            Matrix_Display(neural_layers[j].dC_dw_matrix);
+//            std::cout<<"Display Bias Derivatives after change"<<std::endl;
+//            Matrix_Display(neural_layers[j].dC_db_matrix);
+        }
+
+        if ((i + 1) % 10 == 0 || i == iterations - 1) {
+//            // Additional logging for specified intervals
+//            std::cout << "Checkpoint at iteration " << i + 1 << " MSE: " << mean_squared_error << std::endl;
         }
     }
-    std::cout<<"FINAL MSE: "<<mean_squared_error<<std::endl;
-
-
-
+    std::cout << "Final MSE after " << iterations << " iterations: " << mean_squared_error << std::endl;
+    std::cout << "Improvement from initial MSE: " << initial_mse - mean_squared_error << std::endl;
+    std::cout<< "Final Model : "<<std::endl;
+    Matrix_Display(neural_layers[size-1].activated_output_matrix);
 }
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-void Display_Gradients(const std::vector<Neural_Layer>&neural_layers, std::initializer_list<int> layers){
+void Display_Gradients(const std::vector<Neural_Layer> &neural_layers, std::initializer_list<int> layers) {
     // Convert initializer_list to vector for easier access
     // Assuming 'layers' is your std::initializer_list<int>
     std::vector<int> layerSizes = layers;
     size_t size = layerSizes.size();
-    std::cout<<"Size of Neural Layer: "<<size<<std::endl;// This equals 3
 
 
-    for (int layer_number=0;layer_number<size;layer_number++){
+    for (int layer_number = 0; layer_number < size; layer_number++) {
 
-        std::cout<<"---Layer Number---"<<layer_number<<std::endl;
-        std::cout<<"dC/dw"<<std::endl;
-        Matrix_Display(neural_layers[layer_number].dC_dw_matrix);
     }
 
 }
@@ -375,7 +325,6 @@ void Display_Gradients(const std::vector<Neural_Layer>&neural_layers, std::initi
 // Broadcasts an existing matrix to a larger size specified by newRows and newColumns
 void Matrix_Broadcast(Matrix *result, const Matrix original, const int newRows, const int newColumns) {
     if (newRows % original.row != 0 || newColumns % original.column != 0) {
-        printf("Error: New dimensions must be multiples of the original dimensions.\n");
         exit(1);
     }
 
@@ -384,7 +333,6 @@ void Matrix_Broadcast(Matrix *result, const Matrix original, const int newRows, 
     result->column = newColumns;
     result->data = (float *) malloc(newRows * newColumns * sizeof(float));
     if (result->data == NULL) {
-        printf("Failed to allocate memory for the broadcasted matrix.\n");
         exit(1);
     }
 
@@ -399,7 +347,6 @@ void Matrix_Broadcast(Matrix *result, const Matrix original, const int newRows, 
         }
     }
 }
-
 
 
 void Matrix_Transpose_v2(Matrix *final, const Matrix original) {
@@ -425,7 +372,7 @@ Matrix Matrix_Maker_2DArray_v2(int maxColumns, int totalRows, int desiredRows, i
     Matrix M;
     M.row = desiredRows;
     M.column = desiredColumns;
-    M.data = (float*) calloc(desiredRows * desiredColumns, sizeof(float));
+    M.data = (float *) calloc(desiredRows * desiredColumns, sizeof(float));
     if (M.data == NULL) {
         std::cerr << "Failed to allocate memory for matrix data.\n";
         exit(EXIT_FAILURE);
@@ -459,7 +406,7 @@ void Matrix_Scalar_Multiply(Matrix &matrix, float scalar) {
 }
 
 // Function to add up all values in a matrix and return a single scalar
-float Matrix_Sum_All_Elements(const Matrix& matrix) {
+float Matrix_Sum_All_Elements(const Matrix &matrix) {
     float totalSum = 0;
     for (int i = 0; i < matrix.row; i++) {
         for (int j = 0; j < matrix.column; j++) {
@@ -468,8 +415,9 @@ float Matrix_Sum_All_Elements(const Matrix& matrix) {
     }
     return totalSum;
 }
+
 // Function to raise each element of a matrix to a specified power
-void Matrix_Power(Matrix& matrix, float power) {
+void Matrix_Power(Matrix &matrix, float power) {
     for (int i = 0; i < matrix.row; i++) {
         for (int j = 0; j < matrix.column; j++) {
             int index = i * matrix.column + j;
@@ -483,13 +431,11 @@ void Matrix_Power(Matrix& matrix, float power) {
 void Matrix_Hadamard_Product(Matrix &result, const Matrix &a, const Matrix &b) {
     // First, check if the input matrices have the same dimensions
     if (a.row != b.row || a.column != b.column) {
-        printf("Error: Matrices must have the same dimensions to perform Hadamard product.\n");
         return;
     }
 
     // Ensure the result matrix has the correct dimensions
     if (result.row != a.row || result.column != a.column) {
-        printf("Error: Result matrix must have the same dimensions as input matrices.\n");
         return;
     }
 
@@ -512,7 +458,7 @@ void Matrix_Absolute(Matrix &matrix) {
     }
 }
 
-void fillMatrix(Matrix& matrix, float value) {
+void fillMatrix(Matrix &matrix, float value) {
     int totalElements = matrix.row * matrix.column;
     for (int i = 0; i < totalElements; i++) {
         matrix.data[i] = value;
@@ -522,7 +468,7 @@ void fillMatrix(Matrix& matrix, float value) {
 // Function to copy data from source matrix to destination matrix.
 void Matrix_Copy(Matrix *destination, const Matrix *source) {
     if (destination->row != source->row || destination->column != source->column) {
-        fprintf(stderr, "Error: Destination and source matrices must have the same dimensions.\n");
+
         return;
     }
 
@@ -537,7 +483,7 @@ void Matrix_Copy(Matrix *destination, const Matrix *source) {
 void Matrix_Sum_Columns(Matrix &dest, const Matrix &src) {
     // Ensure the destination matrix has the correct number of columns
     if (dest.column != src.column) {
-        fprintf(stderr, "Error: Column count mismatch.\n");
+
         return;
     }
 
@@ -553,3 +499,25 @@ void Matrix_Sum_Columns(Matrix &dest, const Matrix &src) {
     }
 }
 
+// Helper function to fill a matrix with a specific value
+void Matrix_Fill(Matrix &matrix, float value) {
+    for (int i = 0; i < matrix.row * matrix.column; i++) {
+        matrix.data[i] = value;
+    }
+}
+
+// Function to subtract one matrix from another
+void Matrix_Subtract_V2(Matrix& result, const Matrix& matrix1, const Matrix& matrix2) {
+    // Ensure both matrices have the same dimensions
+    if (matrix1.row != matrix2.row || matrix1.column != matrix2.column) {
+        throw std::invalid_argument("Error: Matrices dimensions do not match.");
+    }
+
+    // Assuming 'result' matrix is pre-allocated and has the same dimensions as 'matrix1' and 'matrix2'
+    for (int i = 0; i < matrix1.row; i++) {
+        for (int j = 0; j < matrix1.column; j++) {
+            int index = Matrix_Index_Finder(matrix1.column, i, j);
+            result.data[index] = matrix1.data[index] - matrix2.data[index];
+        }
+    }
+}

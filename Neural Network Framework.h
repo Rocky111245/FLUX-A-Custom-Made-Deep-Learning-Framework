@@ -83,8 +83,9 @@ std::vector<Neural_Layer> Form_Network(std::initializer_list<int> layers, Matrix
 void Learn(std::vector<Neural_Layer>&neural_layers, std::initializer_list<int> layers,Matrix input_matrix, Matrix output_matrix, float learning_rate, int iterations);
 void Matrix_Copy(Matrix *destination, const Matrix *source);
 void Matrix_Sum_Columns(Matrix &dest, const Matrix &src);
-
-
+void Matrix_Fill(Matrix& matrix, float value);
+void Matrix_Subtract_V2(Matrix& result, const Matrix& matrix1, const Matrix& matrix2);
+std::vector<Neural_Layer> Form_Network(std::initializer_list<int> layers, int sample_size);
 
 
 
