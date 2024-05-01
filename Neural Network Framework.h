@@ -58,9 +58,9 @@ private:
 
 Matrix* Neural_Layer_Maker(int neurones_In_First_Layer, int neurones_In_Second_Layer,Matrix inputMatrix);
 void  Forward_Pass(std::vector<Neural_Layer>&neural_layers, std::initializer_list<int> layers);
-void Forward_Pass(std::pair<std::vector<Neural_Layer>, std::vector<Matrix>>& network_data, std::initializer_list<int> layers);
-void Back_Propagation(std::vector<Neural_Layer>&neural_layers, std::initializer_list<int> layers,Matrix output,float &mean_squared_error);
-void Back_Propagation(std::pair<std::vector<Neural_Layer>, std::vector<Matrix>>& network_data, std::initializer_list<int> layers, Matrix output, float &mean_squared_error) ;
+void Forward_Pass(std::tuple<std::vector<Neural_Layer>, std::vector<Matrix>, std::vector<Matrix>>& network_data, std::initializer_list<int> layers);
+void Back_Propagation(std::vector<Neural_Layer> &neural_layers, std::initializer_list<int> layers, Matrix output, float &mean_squared_error);
+void Back_Propagation(std::tuple<std::vector<Neural_Layer>, std::vector<Matrix>, std::vector<Matrix>>& network_data, std::initializer_list<int> layers, Matrix output, float &mean_squared_error, float &momentum)  ;
 void Matrix_Transpose_v2(Matrix *final, Matrix original) ;
 void Matrix_Multiply_V2(Matrix *finalMatrix, Matrix firstMatrix, Matrix secondMatrix);
 void Display_Gradients(const std::vector<Neural_Layer>&neural_layers, std::initializer_list<int> layers);
@@ -71,12 +71,12 @@ float Matrix_Sum_All_Elements(const Matrix& matrix);
 void Matrix_Power(Matrix& matrix, float power);
 void Matrix_Hadamard_Product(Matrix &result, const Matrix &a, const Matrix &b);
 void Matrix_Absolute(Matrix &matrix);
-void Learn(std::vector<Neural_Layer> &neural_layers, std::initializer_list<int> layers, Matrix output_matrix, float learning_rate, int iterations);
+
 void fillMatrix(Matrix& matrix, float value);
 std::vector<Neural_Layer> Form_Network(std::initializer_list<int> layers, Matrix inputMatrix);
-std::pair<std::vector<Neural_Layer>, std::vector<Matrix>> Form_Network(std::initializer_list<int> layers, Matrix inputMatrix, const char* learning_algorithm);
-void Learn(std::vector<Neural_Layer>&neural_layers, std::initializer_list<int> layers,Matrix input_matrix, Matrix output_matrix, float learning_rate, int iterations);
-void Learn(std::pair<std::vector<Neural_Layer>, std::vector<Matrix>>& network_data, std::initializer_list<int> layers,  Matrix output_matrix, float learning_rate, float momentum, int iterations);
+std::tuple<std::vector<Neural_Layer>, std::vector<Matrix>, std::vector<Matrix>>Form_Network(std::initializer_list<int> layers, Matrix inputMatrix, const char* learning_algorithm);
+void Learn(std::vector<Neural_Layer> &neural_layers, std::initializer_list<int> layers, Matrix output_matrix, float learning_rate, int iterations);
+void Learn(std::tuple<std::vector<Neural_Layer>, std::vector<Matrix>, std::vector<Matrix>>& network_data, std::initializer_list<int> layers,  Matrix output_matrix, float learning_rate, float momentum, int iterations);
 void Matrix_Copy(Matrix *destination, const Matrix *source);
 void Matrix_Sum_Columns(Matrix &dest, const Matrix &src);
 void Matrix_Fill(Matrix& matrix, float value);

@@ -159,7 +159,7 @@ std::vector<Neural_Layer> Form_Network(std::initializer_list<int> layers, Matrix
 }
 
 
-std::pair<std::vector<Neural_Layer>, std::vector<Matrix>> Form_Network(std::initializer_list<int> layers, Matrix inputMatrix, const char* learning_algorithm) {
+std::tuple<std::vector<Neural_Layer>, std::vector<Matrix>, std::vector<Matrix>>Form_Network(std::initializer_list<int> layers, Matrix inputMatrix, const char* learning_algorithm) {
     std::vector<int> layerSizes = layers;
     size_t size = layerSizes.size();
     std::cout << "Size of Neural Layer: " << size << std::endl;
@@ -167,6 +167,12 @@ std::pair<std::vector<Neural_Layer>, std::vector<Matrix>> Form_Network(std::init
 
     std::vector<Neural_Layer> neural_layers(size); // layers will always be n-1 because the input layer is not considered
     std::vector<Matrix> velocity;
+    std::vector<Matrix> temp_modified_velocity;
+
+   velocity.resize(size);// this vector array will have the same number of layers as the neural network.
+   temp_modified_velocity.resize(size);
+
+
 
 
     for (int i = 0; i < size; i++) {
@@ -179,19 +185,17 @@ std::pair<std::vector<Neural_Layer>, std::vector<Matrix>> Form_Network(std::init
         // Reset currentInput for the next layer
         currentInput = Matrix_Create_Zero(inputMatrix.row, layerSizes[i]);
 
-        // Initialize the velocity vector only if using "NAG"
-        if (strcmp(learning_algorithm, "NAG") == 0) {
-            velocity.reserve(size);// this vector array will have the same number of layers as the neural network.
-            velocity[i] = Matrix_Create_Zero(neural_layers[i].weights_matrix.row, neural_layers[i].weights_matrix.column);
-//            std::cout<<"Initializing Weights for NAG"<<std::endl;
-//            Matrix_Display(velocity[i]);
-//            std::cout<<velocity[i].row<<std::endl;
-//            std::cout<<velocity[i].column<<std::endl;
-        }
+        velocity[i]=Matrix_Create_Zero(neural_layers[i].weights_matrix.row, neural_layers[i].weights_matrix.column);
+        temp_modified_velocity[i] = Matrix_Create_Zero(neural_layers[i].weights_matrix.row, neural_layers[i].weights_matrix.column);
+//      std::cout<<"Initializing Weights for NAG"<<std::endl;
+//      Matrix_Display(velocity[i]);
+//      std::cout<<velocity[i].row<<std::endl;
+//      std::cout<<velocity[i].column<<std::endl;
+
 
     }
 
-    return {neural_layers,velocity};
+    return {neural_layers,velocity,temp_modified_velocity};
 }
 
 
@@ -233,13 +237,13 @@ void Forward_Pass(std::vector<Neural_Layer> &neural_layers, std::initializer_lis
 }
 
 //this function will iterate the Neural_Layer_Maker function on the number of networks I want to make
-void Forward_Pass(std::pair<std::vector<Neural_Layer>, std::vector<Matrix>>& network_data, std::initializer_list<int> layers) {
+void Forward_Pass(std::tuple<std::vector<Neural_Layer>, std::vector<Matrix>, std::vector<Matrix>>& network_data, std::initializer_list<int> layers) {
     // Convert initializer_list to vector for easier access
     std::vector<int> layerSizes = layers;
     size_t size = layerSizes.size();
     Matrix currentInput;
 
-    auto &[neural_layers,velocity]=network_data;
+    auto &[neural_layers,velocity,temp_modified_velocity]=network_data;
 
     // Iterate over each layer
     for (size_t i = 0; i < size; i++) {
@@ -331,9 +335,9 @@ void Back_Propagation(std::vector<Neural_Layer> &neural_layers, std::initializer
 }
 
 //suppose a fully connected dense neural network with NAG algorithm
-void Back_Propagation(std::pair<std::vector<Neural_Layer>, std::vector<Matrix>>& network_data, std::initializer_list<int> layers, Matrix output, float &mean_squared_error, float &momentum) {
+void Back_Propagation(std::tuple<std::vector<Neural_Layer>, std::vector<Matrix>, std::vector<Matrix>>& network_data, std::initializer_list<int> layers, Matrix output, float &mean_squared_error, float &momentum) {
 
-    auto &[neural_layers,velocity]=network_data;
+    auto &[neural_layers,velocity,temp_modified_velocity]=network_data;
 
 
     // Convert initializer_list to vector for easier access
@@ -359,17 +363,14 @@ void Back_Propagation(std::pair<std::vector<Neural_Layer>, std::vector<Matrix>>&
     for (int layer_number = last_layer; layer_number >= 0; layer_number--) {
 
         //a zero matrix will be created according to the layer number
-        Matrix temp_modified_velocity= Matrix_Create_Zero(neural_layers[layer_number].weights_matrix.row,neural_layers[layer_number].weights_matrix.column);
-        NAG_First_Call(neural_layers,velocity,temp_modified_velocity,layer_number,momentum);
+
+        NAG_First_Call(network_data,layer_number,momentum);
 
 
     }
 
 
 }
-
-
-
 
 
 void Learn(std::vector<Neural_Layer> &neural_layers, std::initializer_list<int> layers, Matrix output_matrix, float learning_rate, int iterations) {
@@ -382,7 +383,7 @@ void Learn(std::vector<Neural_Layer> &neural_layers, std::initializer_list<int> 
     Back_Propagation(neural_layers, layers, output_matrix, mean_squared_error);
     float initial_mse = mean_squared_error;
 
-   // std::cout << "Initial MSE: " << initial_mse << std::endl;
+    // std::cout << "Initial MSE: " << initial_mse << std::endl;
 
 
     for (int i = 0; i < iterations; i++) {
@@ -424,13 +425,13 @@ void Learn(std::vector<Neural_Layer> &neural_layers, std::initializer_list<int> 
     Matrix_Display(neural_layers[size-1].activated_output_matrix);
 }
 
-void Learn(std::pair<std::vector<Neural_Layer>, std::vector<Matrix>>& network_data, std::initializer_list<int> layers,  Matrix output_matrix, float learning_rate, float momentum, int iterations) {
+void Learn(std::tuple<std::vector<Neural_Layer>, std::vector<Matrix>, std::vector<Matrix>>& network_data, std::initializer_list<int> layers,  Matrix output_matrix, float learning_rate, float momentum, int iterations) {
     std::vector<int> layerSizes = layers;
     size_t size = layerSizes.size();
-    auto &[neural_layers,velocity]=network_data;
+    auto &[neural_layers,velocity,temp_modified_velocity]=network_data;
 
     // Perform a forward pass and backpropagation to calculate initial MSE
-    Forward_Pass(network_data, layers);
+    Forward_Pass(network_data,layers);
     float mean_squared_error;
     Back_Propagation(network_data, layers, output_matrix, mean_squared_error,momentum);
     float initial_mse = mean_squared_error;
@@ -449,7 +450,7 @@ void Learn(std::pair<std::vector<Neural_Layer>, std::vector<Matrix>>& network_da
         for (size_t j = 0; j < size; j++) {
             // Update weights
             Matrix_Scalar_Multiply(neural_layers[j].dC_dw_matrix, learning_rate);
-            NAG_Second_Call(network_data,te)
+            NAG_Second_Call(network_data,j);
 
             // Update biases
             Matrix_Scalar_Multiply(neural_layers[j].dC_db_matrix, learning_rate);
@@ -474,6 +475,9 @@ void Learn(std::pair<std::vector<Neural_Layer>, std::vector<Matrix>>& network_da
     std::cout<< "Final Model  : "<<std::endl;
     Matrix_Display(neural_layers[size-1].weight_input_bias_matrix);
     std::cout<< "Final Predicted Values : "<<std::endl;
+    Matrix_Display(neural_layers[size-1].activated_output_matrix);
+    std::cout<< "Final Predicted Values After Normalize : "<<std::endl;
+    Normalize_Data(neural_layers[size-1].activated_output_matrix);
     Matrix_Display(neural_layers[size-1].activated_output_matrix);
 }
 

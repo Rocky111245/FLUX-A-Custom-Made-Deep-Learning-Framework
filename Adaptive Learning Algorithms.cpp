@@ -6,17 +6,21 @@
 #include <vector>
 
 
-void NAG_First_Call(std::vector<Neural_Layer> &neural_layers,std::vector<Matrix>&velocity, Matrix &temp_modified_velocity,int layer_number,float momentum){
+void NAG_First_Call(std::tuple<std::vector<Neural_Layer>, std::vector<Matrix>, std::vector<Matrix>>& network_data,int layer_number,float momentum){
 
+    auto &[neural_layers,velocity,temp_modified_velocity]=network_data;
+
+
+    Matrix_Fill(temp_modified_velocity[layer_number],0);
     //Makes a deep copy of the current layer's velocity
-    Matrix_DeepCopy(temp_modified_velocity,velocity[layer_number]);
+    Matrix_DeepCopy(temp_modified_velocity[layer_number],velocity[layer_number]);
     //scales the matrix of that specific layer with the momentum
-    Matrix_Scalar_Multiply(temp_modified_velocity,momentum);
+    Matrix_Scalar_Multiply(temp_modified_velocity[layer_number],momentum);
 
     //Creation of temporary weights matrix
     Matrix temporary_weight= Matrix_Create_Zero(neural_layers[layer_number].weights_matrix.row,neural_layers[layer_number].weights_matrix.column);
     // Modified the weight. This modified weight will be used to find the dC_dW
-    Matrix_Subtract(&temporary_weight,neural_layers[layer_number].weights_matrix,temp_modified_velocity);
+    Matrix_Subtract(&temporary_weight,neural_layers[layer_number].weights_matrix,temp_modified_velocity[layer_number]);
 
 //  Compute dC_da using the modified weights
     Matrix n = Matrix_Create_Zero(neural_layers[layer_number].weights_matrix.column, neural_layers[layer_number].weights_matrix.row);
@@ -51,9 +55,11 @@ void NAG_First_Call(std::vector<Neural_Layer> &neural_layers,std::vector<Matrix>
 }
 
 
-void NAG_Second_Call(std::vector<Neural_Layer> &neural_layers,std::vector<Matrix>&velocity, Matrix &temp_modified_velocity,int layer_number){
+void NAG_Second_Call(std::tuple<std::vector<Neural_Layer>, std::vector<Matrix>, std::vector<Matrix>>& network_data, size_t layer_number){
+    auto &[neural_layers,velocity,temp_modified_velocity]=network_data;
+
     //  Update the velocity. This will happen in another function called the learn function where dC_dw has already been modified by the learning rate
-    Matrix_Add(&velocity[layer_number],temp_modified_velocity,neural_layers[layer_number].dC_dw_matrix);
+    Matrix_Add(&velocity[layer_number],temp_modified_velocity[layer_number],neural_layers[layer_number].dC_dw_matrix);
     Matrix_Subtract(&neural_layers[layer_number].weights_matrix,neural_layers[layer_number].weights_matrix,velocity[layer_number]);
 }
 

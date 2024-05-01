@@ -19,8 +19,11 @@ int main() {
        Matrix input=From_CSV_To_Matrix(filenameInput, num_rows_input, num_columns_input);
        Matrix output=From_CSV_To_Matrix(filenameOutput, num_rows_output, num_columns_output);
 
-       std::vector<Neural_Layer> network = Form_Network({15,1}, input);
-       Learn(network,{15,1},output,0.00012,400000);
+        std::tuple<std::vector<Neural_Layer>, std::vector<Matrix>, std::vector<Matrix>> network = Form_Network({15,10,1}, input,"nag");
+        //std::vector<Neural_Layer> network = Form_Network({15,1}, input);
+        Learn(network,{15,10,1},output,0.0015,0.09,250000);
+        //Learn(network,{15,1},output,0.001,200000);
+
 
 
 

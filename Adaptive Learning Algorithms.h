@@ -15,8 +15,8 @@ extern "C" {
 
 
 
-void NAG_First_Call(std::vector<Neural_Layer> &neural_layers,std::vector<Matrix>&velocity, Matrix &temp_modified_velocity,int layer_number,float momentum);
-void NAG_Second_Call(std::vector<Neural_Layer> &neural_layers,std::vector<Matrix>&velocity, Matrix &temp_modified_velocity,int layer_number);
+void NAG_First_Call(std::tuple<std::vector<Neural_Layer>, std::vector<Matrix>, std::vector<Matrix>>& network_data,int layer_number,float momentum);
+void NAG_Second_Call(std::tuple<std::vector<Neural_Layer>, std::vector<Matrix>, std::vector<Matrix>>& network_data, size_t layer_number);
 
 
 
