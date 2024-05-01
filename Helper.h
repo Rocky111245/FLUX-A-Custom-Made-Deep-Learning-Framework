@@ -25,7 +25,7 @@ void Matrix_Scalar_Multiply(Matrix &matrix, float scalar);
 Matrix Matrix_Maker_2DArray_v2(int maxColumns, int totalRows, int desiredRows, int desiredColumns, int stride, int step, const float *data);
 void Matrix_Transpose_v2(Matrix *final, Matrix original);
 void Matrix_Broadcast(Matrix *result, Matrix original, int newRows, int newColumns);
-
+void Matrix_DeepCopy(Matrix& destination,const Matrix& source) ;
 
 
 

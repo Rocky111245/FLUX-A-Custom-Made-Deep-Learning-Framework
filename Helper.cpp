@@ -240,3 +240,17 @@ Matrix Matrix_Create_Random_V2(int rows, int columns, int scale) {
     return M;
 }
 
+
+void Matrix_DeepCopy(Matrix& destination,const Matrix& source) {
+    // Check if dimensions match
+    if (destination.row != source.row || destination.column != source.column) {
+        delete[] destination.data;  // Free existing destination data
+        destination.data = new float[source.row * source.column];  // Allocate new memory
+        destination.row = source.row;
+        destination.column = source.column;
+    }
+
+    // Perform the copy
+    std::copy(source.data, source.data + source.row * source.column, destination.data);
+}
+

@@ -9,10 +9,10 @@ int main() {
     try {
         // The full path to the CSV file including the filenameInput and its extension
         std::string filenameInput = R"(D:\Software\Machine Learning\Datasets\redWine.csv)";
-        int num_rows_input = 1200;  // The number of rows to read, excluding the header
+        int num_rows_input = 600;  // The number of rows to read, excluding the header
         int num_columns_input = 11;  // The number of columns to read
         std::string filenameOutput = R"(D:\Software\Machine Learning\Datasets\redWineOutput.csv)";
-        int num_rows_output = 1200;  // The number of rows to read, excluding the header
+        int num_rows_output = 600;  // The number of rows to read, excluding the header
         int num_columns_output = 1;  // The number of columns to read
 
         // Call the function to read the CSV and convert it to a matrix
@@ -20,7 +20,7 @@ int main() {
        Matrix output=From_CSV_To_Matrix(filenameOutput, num_rows_output, num_columns_output);
 
        std::vector<Neural_Layer> network = Form_Network({15,1}, input);
-       Learn(network,{15,1},output,0.0001,200000);
+       Learn(network,{15,1},output,0.00012,400000);
 
 
 
