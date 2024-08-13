@@ -1,12 +1,12 @@
 #ifndef DISCRIMINATIVE_DENSE_NEURAL_NETWORK_FRAMEWORK_NEURAL_NETWORK_FRAMEWORK_H
 #define DISCRIMINATIVE_DENSE_NEURAL_NETWORK_FRAMEWORK_NEURAL_NETWORK_FRAMEWORK_H
-#include "MatrixLibrary.h"
+#include "MatrixLibrary.h" // Ensure this path is correct
 #include <iostream>
 #include <initializer_list>
 #include <vector>
 #include <cmath>
 #include <cstring>
-#include <memory>
+#include <memory> // Include for unique_ptr
 
 
 class Neural_Layer {

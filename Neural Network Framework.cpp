@@ -33,7 +33,7 @@ void Neural_Layer::Activate() {
     // Iterate over each element of the matrix
     for (int i = 0; i < weight_input_bias_matrix.rows(); ++i) {
         for (int j = 0; j < weight_input_bias_matrix.columns(); ++j) {
-            activated_output_matrix(i,j) = LeakyReLU(weight_input_bias_matrix(i,j));
+            activated_output_matrix(i,j) = ReLU(weight_input_bias_matrix(i,j));
         }
     }
 }
@@ -42,7 +42,7 @@ void Neural_Layer::Activate_Last()  {
     // Iterate over each element of the matrix
     for (int i = 0; i < weight_input_bias_matrix.rows(); ++i) {
         for (int j = 0; j < weight_input_bias_matrix.columns(); ++j) {
-            activated_output_matrix(i,j) = Linear_Activation(weight_input_bias_matrix(i,j));
+            activated_output_matrix(i,j) = Sigmoid_Function(weight_input_bias_matrix(i,j));
         }
     }
 }
@@ -52,7 +52,7 @@ void Neural_Layer::Dh_Da_Function() {
     // Iterate over all elements of the matrix (rows x columns)
     for (int i = 0; i < weight_input_bias_matrix.rows(); ++i) {
         for (int j = 0; j < weight_input_bias_matrix.columns(); ++j) {
-            dh_da_matrix(i,j) = (weight_input_bias_matrix(i,j)> 0) ? 1.0f : 0.01f;
+            dh_da_matrix(i,j) = (weight_input_bias_matrix(i,j)> 0) ? 1.0f : 0.00f;
         }
     }
 }
