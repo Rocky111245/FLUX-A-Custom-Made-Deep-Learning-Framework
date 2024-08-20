@@ -1,6 +1,6 @@
 #ifndef DISCRIMINATIVE_DENSE_NEURAL_NETWORK_FRAMEWORK_NEURAL_NETWORK_FRAMEWORK_H
 #define DISCRIMINATIVE_DENSE_NEURAL_NETWORK_FRAMEWORK_NEURAL_NETWORK_FRAMEWORK_H
-#include "MatrixLibrary.h" // Ensure this path is correct
+#include "MatrixLibrary.h"
 #include <iostream>
 #include <initializer_list>
 #include <vector>
@@ -8,6 +8,15 @@
 #include <cstring>
 #include <memory> // Include for unique_ptr
 
+
+enum class ActivationType {
+    RELU,
+    SIGMOID,
+    TANH,
+    LEAKY_RELU,
+    SWISH,
+    LINEAR
+};
 
 class Neural_Layer {
 private:
@@ -26,16 +35,20 @@ public:
     Matrix dC_db_matrix; //derivative of the cost function with respect to the bias in every layer
     Matrix dh_da_matrix; // derivative of the activation function with respect to its inputs
     std::unique_ptr<Matrix> C; // a matrix to hold the cost function, this makes calculation easier
+    struct activation_functions{
+        ActivationType hidden_layers_activation_function;
+        ActivationType last_layer_activation_function;
+    } layer_activation;
 
     // Constructors
     Neural_Layer();
-    Neural_Layer(int neuronsInFirstLayer, int neuronsInSecondLayer, const Matrix& inputMatrix);
+    Neural_Layer(int neuronsInFirstLayer, int neuronsInSecondLayer, const Matrix& inputMatrix, ActivationType hidden_activation, ActivationType output_activation);
 
     // Member functions
     void Compute_Weighted_Sum();
-    void Activate();
+    void Activate(ActivationType activation_type) ;
     void Activate_Last();
-    void Dh_Da_Function();
+    void Dh_Da_Function(bool is_last_layer) ;
     void Initialize_dC_dy_Matrix();
     void Initialize_Cost_Function_Matrix();
     Matrix Initialize_Weights(int row, int column);
@@ -57,7 +70,8 @@ struct Neural_Layer_Information {
     Matrix outputMatrix;
 };
 
-Neural_Layer_Information Form_Network(std::initializer_list<int> layers, Matrix inputMatrix, const Matrix& outputMatrix);
+Neural_Layer_Information Form_Network(std::initializer_list<int> layers, Matrix inputMatrix, const Matrix& outputMatrix, ActivationType hidden_activation, ActivationType output_activation);
+static void displayLayerDetails(const Neural_Layer_Information &layers);
 void Forward_Pass(Neural_Layer_Information &neural_layer_information);
 void Back_Propagation(Neural_Layer_Information &neural_layer_information, float &mean_squared_error);
 void Learn(Neural_Layer_Information &neural_layer_information, float learning_rate, int iterations);

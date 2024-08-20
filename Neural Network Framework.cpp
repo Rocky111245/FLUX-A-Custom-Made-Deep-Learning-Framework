@@ -1,5 +1,5 @@
 #include "Neural Network Framework.h"
-
+#include <string>
 
 
 // Default constructor
@@ -8,20 +8,24 @@ Neural_Layer::Neural_Layer() {
 }
 
 // Parameterized constructor
-Neural_Layer::Neural_Layer(int neuronsInFirstLayer, int neuronsInSecondLayer, const Matrix& inputMatrix)
-        : neurons_in_first_layer(neuronsInFirstLayer), neurons_in_second_layer(neuronsInSecondLayer),
+// Constructor
+Neural_Layer::Neural_Layer(int neuronsInFirstLayer, int neuronsInSecondLayer, const Matrix& inputMatrix, ActivationType hidden_activation, ActivationType output_activation)
+        : neurons_in_first_layer(neuronsInFirstLayer),
+          neurons_in_second_layer(neuronsInSecondLayer),
           input_matrix(inputMatrix),
-          weights_matrix(Initialize_Weights(neuronsInFirstLayer,neuronsInSecondLayer)),
-          bias_matrix(Matrix(1, neuronsInSecondLayer)), // Initialize biases to zero,
+          weights_matrix(Initialize_Weights(neuronsInFirstLayer, neuronsInSecondLayer)),
+          bias_matrix(Matrix(1, neuronsInSecondLayer)), // Initialize biases to zero
           weight_and_input_matrix(Matrix(inputMatrix.rows(), weights_matrix.columns())),
           weight_input_bias_matrix(Matrix(inputMatrix.rows(), weights_matrix.columns())),
           activated_output_matrix(Matrix(inputMatrix.rows(), weights_matrix.columns())),
           dC_da_matrix(Matrix(inputMatrix.rows(), weights_matrix.columns())),
           dh_da_matrix(Matrix(inputMatrix.rows(), weights_matrix.columns())),
           dC_dw_matrix(Matrix(neuronsInFirstLayer, neuronsInSecondLayer)),
-          dC_db_matrix(Matrix(1, neuronsInSecondLayer))
+          dC_db_matrix(Matrix(1, neuronsInSecondLayer)),
+          layer_activation{hidden_activation, output_activation}
 {}
 
+//this function does both the summation and activation part inside a neural node
 void Neural_Layer::Compute_Weighted_Sum() {
     Matrix_Multiply(weight_and_input_matrix, input_matrix,weights_matrix);
     Matrix Broadcasted_Bias= Matrix(weight_and_input_matrix.rows(),weight_and_input_matrix.columns());
@@ -29,14 +33,74 @@ void Neural_Layer::Compute_Weighted_Sum() {
     Matrix_Add(weight_input_bias_matrix, weight_and_input_matrix, Broadcasted_Bias);
 }
 
-void Neural_Layer::Activate() {
-    // Iterate over each element of the matrix
+// Function to convert ActivationType enum to string
+std::string ActivationTypeToString(ActivationType activation_type) {
+    switch (activation_type) {
+        case ActivationType::RELU:
+            return "RELU";
+        case ActivationType::SIGMOID:
+            return "SIGMOID";
+        case ActivationType::TANH:
+            return "TANH";
+        case ActivationType::LEAKY_RELU:
+            return "LEAKY_RELU";
+        case ActivationType::SWISH:
+            return "SWISH";
+        case ActivationType::LINEAR:
+            return "LINEAR";
+        default:
+            return "UNKNOWN";
+    }
+}
+
+//this function is responsible for activating the WIB (weights,input,bias) matrix
+void Neural_Layer::Activate(ActivationType activation_type) {
+    // Iterate over each element of the weight_input_bias_matrix (rows x columns)
     for (int i = 0; i < weight_input_bias_matrix.rows(); ++i) {
         for (int j = 0; j < weight_input_bias_matrix.columns(); ++j) {
-            activated_output_matrix(i,j) = ReLU(weight_input_bias_matrix(i,j));
+            float value = weight_input_bias_matrix(i, j);  // Fetch the value only once per loop
+
+            // Apply the appropriate activation function based on the activation type
+            switch (activation_type) {
+                case ActivationType::RELU:
+                    // ReLU activation
+                    activated_output_matrix(i, j) = ReLU(value);
+                    break;
+
+                case ActivationType::SIGMOID:
+                    // Sigmoid activation
+                    activated_output_matrix(i, j) = Sigmoid_Function(value);
+                    break;
+
+                case ActivationType::TANH:
+                    // Tanh activation
+                    activated_output_matrix(i, j) = Tanh(value);
+                    break;
+
+                case ActivationType::LEAKY_RELU:
+                    // Leaky ReLU activation
+                    activated_output_matrix(i, j) = LeakyReLU(value);
+                    break;
+
+                case ActivationType::SWISH:
+                    // Swish activation
+                    activated_output_matrix(i, j) = Swish(value);
+                    break;
+
+                case ActivationType::LINEAR:
+                    // Linear activation (identity function)
+                    activated_output_matrix(i, j) = Linear_Activation(value);
+                    break;
+
+                default:
+                    // Safe fallback if an unknown activation type is encountered
+                    activated_output_matrix(i, j) = 0.0f;
+                    break;
+            }
         }
     }
 }
+
 
 void Neural_Layer::Activate_Last()  {
     // Iterate over each element of the matrix
@@ -48,25 +112,65 @@ void Neural_Layer::Activate_Last()  {
 }
 
 
-void Neural_Layer::Dh_Da_Function() {
-    // Iterate over all elements of the matrix (rows x columns)
-    for (int i = 0; i < weight_input_bias_matrix.rows(); ++i) {
-        for (int j = 0; j < weight_input_bias_matrix.columns(); ++j) {
-            dh_da_matrix(i,j) = (weight_input_bias_matrix(i,j)> 0) ? 1.0f : 0.00f;
+void Neural_Layer::Dh_Da_Function(bool is_last_layer) {
+    // Determine the activation function based on the layer type
+    ActivationType activation_type;
+
+
+    if (is_last_layer) {
+        activation_type = layer_activation.last_layer_activation_function;
+    } else {
+        activation_type = layer_activation.hidden_layers_activation_function;
+    }
+
+    float value, sigmoid_swish;
+
+    // Iterate over all elements of the activated output matrix (rows x columns)
+    for (int i = 0; i < activated_output_matrix.rows(); ++i) {
+        for (int j = 0; j < activated_output_matrix.columns(); ++j) {
+            value = activated_output_matrix(i, j);  // Fetch the value only once per loop
+
+            switch (activation_type) {
+                case ActivationType::RELU:
+                    // ReLU derivative: 1 if value > 0, else 0
+                    dh_da_matrix(i, j) = (value > 0) ? 1.0f : 0.0f;
+                    break;
+
+                case ActivationType::SIGMOID:
+                    // Sigmoid derivative: sigma(x) * (1 - sigma(x))
+                    dh_da_matrix(i, j) = value * (1.0f - value);
+                    break;
+
+                case ActivationType::TANH:
+                    // Tanh derivative: 1 - tanh^2(x)
+                    dh_da_matrix(i, j) = 1.0f - value * value;
+                    break;
+
+                case ActivationType::LEAKY_RELU:
+                    // Leaky ReLU derivative: 1 if value > 0, else alpha (where alpha = 0.01)
+                    dh_da_matrix(i, j) = (value > 0) ? 1.0f : 0.01f;
+                    break;
+
+                case ActivationType::SWISH:
+                    // Swish derivative: sigmoid(x) + x * sigmoid(x) * (1 - sigmoid(x))
+                    sigmoid_swish = Sigmoid_Function(value);
+                    dh_da_matrix(i, j) = sigmoid_swish + value * sigmoid_swish * (1.0f - sigmoid_swish);
+                    break;
+
+                case ActivationType::LINEAR:
+                    // Linear derivative: 1
+                    dh_da_matrix(i, j) = 1.0f;
+                    break;
+
+                default:
+                    dh_da_matrix(i, j) = 0.0f;  // Safe fallback
+                    break;
+            }
         }
     }
 }
 
 
-//void Neural_Layer::Dh_Da_Function() {
-//    // Iterate over all elements of the matrix (rows x columns)
-//    for (int i = 0; i < weight_input_bias_matrix.row; ++i) {
-//        for (int j = 0; j < weight_input_bias_matrix.column; ++j) {
-//            int index = i * weight_input_bias_matrix.column + j;  // Calculate the index for a 1D array representation of the matrix
-//            dh_da_matrix.data[index] = (weight_input_bias_matrix.data[index] > 0) ? 1.0f : 0.0f;
-//        }
-//    }
-//}
 
 
 void Neural_Layer::Initialize_dC_dy_Matrix() {
@@ -115,43 +219,47 @@ Matrix Neural_Layer:: Initialize_Weights(int row, int column){
 
 
 
-//static void displayLayerDetails(const Neural_Layer_Information &layers , int index)
-//{
-//    const auto &layer=layers.neural_layers;
-//
-//    std::cout<<"Layer Number: "<<index<<std::endl;
-//    std::cout<<"Input Matrix"<<std::endl;
-//    Matrix::Print(layer);
-//    std::cout<<"Weight Matrix"<<std::endl;
-//    Matrix::Print(layers[index].weights_matrix);
-//    std::cout<<"Bias Matrix"<<std::endl;
-//    Matrix::Print(layers[index].bias_matrix);
-//    std::cout<<"Weighted Sum Matrix"<<std::endl;
-//    Matrix::Print(layers[index].weight_and_input_matrix);
-//    std::cout<<"Weighted Sum + Bias Matrix"<<std::endl;
-//    Matrix::Print(layers[index].weight_input_bias_matrix);
-//    std::cout<<"Activated Output Matrix"<<std::endl;
-//    Matrix::Print(layers[index].activated_output_matrix);
-//    std::cout<<"dh_da Matrix"<<std::endl;
-//    Matrix::Print(layers[index].dh_da_matrix);
-//    std::cout<<"dC_da Matrix"<<std::endl;
-//    Matrix::Print(layers[index].dC_da_matrix);
-//    std::cout<<"dC_dw Matrix"<<std::endl;
-//    Matrix::Print(layers[index].dC_dw_matrix);
-//    std::cout<<"dC_db Matrix"<<std::endl;
-//    Matrix::Print(layers[index].dC_db_matrix);
-//}
+static void displayLayerDetails(const Neural_Layer_Information &layers_info)
+{
+    const auto &neural_layers = layers_info.neural_layers;
+
+    for (int i = 0; i < neural_layers.size(); i++) {
+        std::cout << "Layer Number: " << i << std::endl;
+        std::cout << "Input Matrix:" << std::endl;
+        Matrix::Print(neural_layers[i].input_matrix);
+        std::cout << "Weight Matrix:" << std::endl;
+        Matrix::Print(neural_layers[i].weights_matrix);
+        std::cout << "Bias Matrix:" << std::endl;
+        Matrix::Print(neural_layers[i].bias_matrix);
+        std::cout << "Weighted Sum Matrix:" << std::endl;
+        Matrix::Print(neural_layers[i].weight_and_input_matrix);
+        std::cout << "Weighted Sum + Bias Matrix:" << std::endl;
+        Matrix::Print(neural_layers[i].weight_input_bias_matrix);
+        std::cout << "Activated Output Matrix:" << std::endl;
+        Matrix::Print(neural_layers[i].activated_output_matrix);
+        std::cout << "dh_da Matrix:" << std::endl;
+        Matrix::Print(neural_layers[i].dh_da_matrix);
+        std::cout << "dC_da Matrix:" << std::endl;
+        Matrix::Print(neural_layers[i].dC_da_matrix);
+        std::cout << "dC_dw Matrix:" << std::endl;
+        Matrix::Print(neural_layers[i].dC_dw_matrix);
+        std::cout << "dC_db Matrix:" << std::endl;
+        Matrix::Print(neural_layers[i].dC_db_matrix);
+    }
+}
 
 
-// Assuming definition of Neural_Layer and Matrix is available
-// For example purposes, I assume Neural_Layer constructor and Matrix_Create_Zero function are defined somewhere
 
-Neural_Layer_Information Form_Network(std::initializer_list<int> layers, Matrix inputMatrix,const Matrix& outputMatrix) {
+
+
+Neural_Layer_Information Form_Network(std::initializer_list<int> layers, Matrix inputMatrix, const Matrix& outputMatrix, ActivationType hidden_activation, ActivationType output_activation) {
     std::vector<int> layerSizes = layers;
     size_t size = layerSizes.size();
     std::cout << "Size of Neural Layer: " << size << std::endl;
     int sampleSize = inputMatrix.rows();
     std::cout << "Size of Sample: " << sampleSize << std::endl;
+    int parameters = inputMatrix.columns();
+    std::cout << "Parameter Size: " << parameters << std::endl;
 
     Matrix currentInput = std::move(inputMatrix);
     Matrix::Print(currentInput);
@@ -160,43 +268,54 @@ Neural_Layer_Information Form_Network(std::initializer_list<int> layers, Matrix 
     neural_layers.reserve(size);
 
     for (size_t i = 0; i < size; i++) {
-        neural_layers.emplace_back(currentInput.columns(), layerSizes[i], currentInput);
+        ActivationType current_activation = (i == size - 1) ? output_activation : hidden_activation;
+        neural_layers.emplace_back(currentInput.columns(), layerSizes[i], currentInput, hidden_activation,output_activation);
         currentInput = Matrix(currentInput.rows(), layerSizes[i]);
     }
 
-    return Neural_Layer_Information{std::move(neural_layers), layerSizes,sampleSize,outputMatrix};
+    return Neural_Layer_Information{std::move(neural_layers), std::move(layerSizes), sampleSize, outputMatrix};
 }
+
 
 
 
 //this function will iterate the Neural_Layer_Maker function on the number of networks I want to make
 void Forward_Pass(Neural_Layer_Information &neural_layer_information) {
-    //Separated for readability
-    auto &neural_layers=neural_layer_information.neural_layers;
-    auto &layers=neural_layer_information.layers_vector;
+    auto &neural_layers = neural_layer_information.neural_layers;
+    auto &layers = neural_layer_information.layers_vector;
 
     size_t size = layers.size();
     Matrix currentInput;
+    bool is_last_layer=false;
 
     // Iterate over each layer
     for (size_t i = 0; i < size; i++) {
-        // Compute weighted sum and activate the layer
+        // Compute weighted sum
         neural_layers[i].Compute_Weighted_Sum();
-        neural_layers[i].Activate();
-        neural_layers[i].Dh_Da_Function();
 
-        // Set the output of this layer as the input for the next layer
-        if (i < size - 1) {
+
+        if (i == size - 1) {
+            neural_layers[i].Activate(neural_layers[i].layer_activation.last_layer_activation_function);
+            //std::cout << "Activation used: "<< ActivationTypeToString(neural_layers[i].layer_activation.last_layer_activation_function)<< std::endl;
+            is_last_layer = true;
+        }
+        else {
+            neural_layers[i].Activate(neural_layers[i].layer_activation.hidden_layers_activation_function);
+
+            // Prepare input for the next layer
             Matrix_Resize(currentInput, neural_layers[i].activated_output_matrix.rows(), neural_layers[i].activated_output_matrix.columns());
             currentInput = neural_layers[i].activated_output_matrix;
+            //std::cout << "Activation used: "<< ActivationTypeToString(neural_layers[i].layer_activation.hidden_layers_activation_function)<< std::endl;
             neural_layers[i + 1].input_matrix = currentInput;
-        } else if (i == size - 1) {
-            neural_layers[i].Activate_Last();
         }
+
+        // Precalculate for backpropagation (should be after the correct activation)
+        neural_layers[i].Dh_Da_Function(is_last_layer);
 
     }
 
 }
+
 
 
 

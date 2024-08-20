@@ -8,23 +8,20 @@ int main() {
 
     // AND gate input and output data
     std::vector<std::vector<float>> inputData = {
-            {0, 0, 0,0},
-            {0, 0, 1,1},
-            {0, 1, 0,1},
-            {0, 1, 1,0},
-            {1, 0, 0,1},
-            {1, 0, 1,0},
-            {1, 1, 0,0},
-            {1, 1, 1,1}
+            {1, 1, 1},
+            {1, 0, 1},
+            {0, 1, 1},
+            {0, 0, 0},
+
     };
 
 
-    Matrix input_matrix=Matrix_Data_Preprocessor(8,3,0,0,inputData);
+    Matrix input_matrix=Matrix_Data_Preprocessor(4,2,0,0,inputData);
     Matrix::Print(input_matrix);
-    Matrix output_matrix= Matrix_Data_Preprocessor(8,1,3,0,inputData);
+    Matrix output_matrix= Matrix_Data_Preprocessor(4,1,2,0,inputData);
     Matrix::Print(output_matrix);
-    auto neural_layer_information=Form_Network({4,1},input_matrix,output_matrix);
-    Learn(neural_layer_information,0.002,550000);
+    auto neural_layer_information=Form_Network({1},input_matrix,output_matrix,ActivationType::RELU,ActivationType::SIGMOID);
+    Learn(neural_layer_information,0.01,105000);
 
 }
 
