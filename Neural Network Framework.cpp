@@ -102,15 +102,6 @@ void Neural_Layer::Activate(ActivationType activation_type) {
 }
 
 
-void Neural_Layer::Activate_Last()  {
-    // Iterate over each element of the matrix
-    for (int i = 0; i < weight_input_bias_matrix.rows(); ++i) {
-        for (int j = 0; j < weight_input_bias_matrix.columns(); ++j) {
-            activated_output_matrix(i,j) = Sigmoid_Function(weight_input_bias_matrix(i,j));
-        }
-    }
-}
-
 
 void Neural_Layer::Dh_Da_Function(bool is_last_layer) {
     // Determine the activation function based on the layer type
@@ -220,6 +211,7 @@ Matrix Neural_Layer:: Initialize_Weights(int row, int column){
 
 
 static void displayLayerDetails(const Neural_Layer_Information &layers_info)
+
 {
     const auto &neural_layers = layers_info.neural_layers;
 
@@ -248,6 +240,16 @@ static void displayLayerDetails(const Neural_Layer_Information &layers_info)
     }
 }
 
+
+Matrix BinaryThreshold(const Matrix& input, float threshold ) {
+    Matrix result(input.rows(), input.columns());
+    for (int i = 0; i < input.rows(); ++i) {
+        for (int j = 0; j < input.columns(); ++j) {
+            result(i, j) = (input(i, j) >= threshold) ? 1.0f : 0.0f;
+        }
+    }
+    return result;
+}
 
 
 
@@ -393,7 +395,6 @@ void Back_Propagation(Neural_Layer_Information &neural_layer_information, float 
         Matrix_Scalar_Multiply(neural_layers[layer_number].dC_db_matrix, 1.0f / sample_size);
 
     }
-
 }
 
 
@@ -420,9 +421,7 @@ void Learn(Neural_Layer_Information &neural_layer_information, float learning_ra
 
     for (int i = 0; i < iterations; i++) {
         Forward_Pass(neural_layer_information);
-        Back_Propagation(neural_layer_information, mean_squared_error);;
-
-
+        Back_Propagation(neural_layer_information, mean_squared_error);
         // Logging after each iteration
 //        std::cout << "Iteration " << i + 1 << " MSE: " << mean_squared_error << std::endl;
 
@@ -459,6 +458,9 @@ void Learn(Neural_Layer_Information &neural_layer_information, float learning_ra
     Matrix::Print(neural_layers[size-1].weight_input_bias_matrix);
     std::cout<< "Final Predicted Values : "<<std::endl;
     Matrix::Print(neural_layers[size-1].activated_output_matrix);
+    Matrix binaryPredictions = BinaryThreshold(neural_layers[size-1].activated_output_matrix);
+    std::cout << "Final Binary Predictions:" << std::endl;
+    Matrix::Print(binaryPredictions);
 }
 
 

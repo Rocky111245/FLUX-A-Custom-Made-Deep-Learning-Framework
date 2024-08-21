@@ -47,11 +47,11 @@ public:
     // Member functions
     void Compute_Weighted_Sum();
     void Activate(ActivationType activation_type) ;
-    void Activate_Last();
     void Dh_Da_Function(bool is_last_layer) ;
     void Initialize_dC_dy_Matrix();
     void Initialize_Cost_Function_Matrix();
     Matrix Initialize_Weights(int row, int column);
+
 
     // Static member functions
     static float Sigmoid_Function(float x);
@@ -76,5 +76,6 @@ void Forward_Pass(Neural_Layer_Information &neural_layer_information);
 void Back_Propagation(Neural_Layer_Information &neural_layer_information, float &mean_squared_error);
 void Learn(Neural_Layer_Information &neural_layer_information, float learning_rate, int iterations);
 void Matrix_Fill(Matrix& matrix, float value);
+Matrix BinaryThreshold(const Matrix& input, float threshold = 0.5f);
 
 #endif //DISCRIMINATIVE_DENSE_NEURAL_NETWORK_FRAMEWORK_NEURAL_NETWORK_FRAMEWORK_H

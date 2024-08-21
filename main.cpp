@@ -5,24 +5,38 @@
 
 
 int main() {
-
-    // AND gate input and output data
+    // 3D XOR gate input and output data
     std::vector<std::vector<float>> inputData = {
-            {1, 1, 1},
-            {1, 0, 1},
-            {0, 1, 1},
-            {0, 0, 0},
-
+            {0, 0, 0, 0, 0},
+            {0, 0, 0, 1, 1},
+            {0, 0, 1, 0, 1},
+            {0, 0, 1, 1, 0},
+            {0, 1, 0, 0, 1},
+            {0, 1, 0, 1, 0},
+            {0, 1, 1, 0, 0},
+            {0, 1, 1, 1, 1},
+            {1, 0, 0, 0, 1},
+            {1, 0, 0, 1, 0},
+            {1, 0, 1, 0, 0},
+            {1, 0, 1, 1, 1},
+            {1, 1, 0, 0, 0},
+            {1, 1, 0, 1, 1},
+            {1, 1, 1, 0, 1},
+            {1, 1, 1, 1, 0}
     };
 
 
-    Matrix input_matrix=Matrix_Data_Preprocessor(4,2,0,0,inputData);
+    Matrix input_matrix = Matrix_Data_Preprocessor(16, 4, 0, 0, inputData);
     Matrix::Print(input_matrix);
-    Matrix output_matrix= Matrix_Data_Preprocessor(4,1,2,0,inputData);
+    Matrix output_matrix = Matrix_Data_Preprocessor(16, 1, 4, 0, inputData);
     Matrix::Print(output_matrix);
-    auto neural_layer_information=Form_Network({1},input_matrix,output_matrix,ActivationType::RELU,ActivationType::SIGMOID);
-    Learn(neural_layer_information,0.01,105000);
 
+    // Create a neural network with 16 input neurons(inbuilt), 8 hidden neurons, and 1 output neuron
+    auto neural_layer_information = Form_Network({8,4, 1}, input_matrix, output_matrix, ActivationType::TANH, ActivationType::SIGMOID);
+
+    Learn(neural_layer_information, 0.01, 300000);
+
+    return 0;
 }
 
 
