@@ -8,6 +8,10 @@ add_executable(_Discriminative_Dense_Neural_Network_Framework
         main.cpp
         "Neural Network Framework.cpp"
         "Neural Network Framework.h"
+        "MSEGraphPlotter.cpp"
+        "MSEGraphPlotter.h"
+        "NNStructureVis .cpp"
+        "NNStructureVis .h"
 )
 
 # Specify the directory where the header file can be found

@@ -1,4 +1,5 @@
 #include "Neural Network Framework.h"
+#include "MSEGraphPlotter.h"
 #include <string>
 
 
@@ -203,7 +204,7 @@ float Neural_Layer::Linear_Activation(float x) {
 
 Matrix Neural_Layer:: Initialize_Weights(int row, int column){
     Matrix A (row,column);
-    Matrix_Randomize(A);
+    Matrix_Xavier_Uniform(A);
     return A;
 }
 
@@ -264,7 +265,7 @@ Neural_Layer_Information Form_Network(std::initializer_list<int> layers, Matrix 
     std::cout << "Parameter Size: " << parameters << std::endl;
 
     Matrix currentInput = std::move(inputMatrix);
-    Matrix::Print(currentInput);
+    //Matrix::Print(currentInput);
 
     std::vector<Neural_Layer> neural_layers;
     neural_layers.reserve(size);
@@ -400,13 +401,11 @@ void Back_Propagation(Neural_Layer_Information &neural_layer_information, float 
 
 
 void Learn(Neural_Layer_Information &neural_layer_information, float learning_rate, int iterations) {
-
-    //Separated for readability
-    auto &neural_layers=neural_layer_information.neural_layers;
-    auto &layers=neural_layer_information.layers_vector;
-    auto &sample_size=neural_layer_information.sample_size;
-    auto &output_matrix=neural_layer_information.outputMatrix;
-
+    // Separated for readability
+    auto &neural_layers = neural_layer_information.neural_layers;
+    auto &layers = neural_layer_information.layers_vector;
+    auto &sample_size = neural_layer_information.sample_size;
+    auto &output_matrix = neural_layer_information.outputMatrix;
 
     size_t size = layers.size();
 
@@ -416,51 +415,59 @@ void Learn(Neural_Layer_Information &neural_layer_information, float learning_ra
     Back_Propagation(neural_layer_information, mean_squared_error);
     float initial_mse = mean_squared_error;
 
-    // std::cout << "Initial MSE: " << initial_mse << std::endl;
+    std::cout << "Initial MSE: " << initial_mse << std::endl;
 
+    // For MSE graph plotting
+    std::vector<float> mse_values;
+    std::vector<int> iteration_points;
+    int plot_interval = std::max(1, iterations / 30);  // Plot up to 30 points on the graph
 
     for (int i = 0; i < iterations; i++) {
         Forward_Pass(neural_layer_information);
         Back_Propagation(neural_layer_information, mean_squared_error);
-        // Logging after each iteration
-//        std::cout << "Iteration " << i + 1 << " MSE: " << mean_squared_error << std::endl;
 
         for (size_t j = 0; j < size; j++) {
             // Update weights
             Matrix_Scalar_Multiply(neural_layers[j].dC_dw_matrix, learning_rate);
-            Matrix temp_weight(neural_layers[j].weights_matrix.rows(),neural_layers[j].weights_matrix.columns());
+            Matrix temp_weight(neural_layers[j].weights_matrix.rows(), neural_layers[j].weights_matrix.columns());
             Matrix_Subtract(temp_weight, neural_layers[j].weights_matrix, neural_layers[j].dC_dw_matrix);
-            neural_layers[j].weights_matrix=std::move(temp_weight);
+            neural_layers[j].weights_matrix = std::move(temp_weight);
 
             // Update biases
             Matrix_Scalar_Multiply(neural_layers[j].dC_db_matrix, learning_rate);
-            Matrix temp_bias(neural_layers[j].bias_matrix.rows(),neural_layers[j].bias_matrix.columns());
+            Matrix temp_bias(neural_layers[j].bias_matrix.rows(), neural_layers[j].bias_matrix.columns());
             Matrix_Subtract(temp_bias, neural_layers[j].bias_matrix, neural_layers[j].dC_db_matrix);
-            neural_layers[j].bias_matrix=std::move(temp_bias);
+            neural_layers[j].bias_matrix = std::move(temp_bias);
 
             // Reset gradients
-            Matrix_Fill(neural_layers[j].dC_dw_matrix,0);
-            Matrix_Fill(neural_layers[j].dC_db_matrix,0);
+            Matrix_Fill(neural_layers[j].dC_dw_matrix, 0);
+            Matrix_Fill(neural_layers[j].dC_db_matrix, 0);
         }
 
-        if ((i + 1) % 10 == 0 || i == iterations - 1) {
-//            // Additional logging for specified intervals
-            std::cout << "Checkpoint at iteration " << i + 1 << " MSE: " << mean_squared_error << std::endl;
+        // Collect MSE values for plotting and logging
+        if ((i + 1) % plot_interval == 0 || i == iterations - 1) {
+            mse_values.push_back(mean_squared_error);
+            iteration_points.push_back(i + 1);
+            std::cout << "Iteration " << i + 1 << " MSE: " << mean_squared_error << std::endl;
         }
     }
+
     std::cout << "Final MSE after " << iterations << " iterations: " << mean_squared_error << std::endl;
     std::cout << "Improvement from initial MSE: " << initial_mse - mean_squared_error << std::endl;
-    std::cout<< "Final Model Weights : "<<std::endl;
+    std::cout << "Final Model Weights : " << std::endl;
     Matrix::Print(neural_layers[size-1].weights_matrix);
-    std::cout<< "Final Model Bias : "<<std::endl;
+    std::cout << "Final Model Bias : " << std::endl;
     Matrix::Print(neural_layers[size-1].bias_matrix);
-    std::cout<< "Final Model  : "<<std::endl;
+    std::cout << "Final Model  : " << std::endl;
     Matrix::Print(neural_layers[size-1].weight_input_bias_matrix);
-    std::cout<< "Final Predicted Values : "<<std::endl;
+    std::cout << "Final Predicted Values : " << std::endl;
     Matrix::Print(neural_layers[size-1].activated_output_matrix);
     Matrix binaryPredictions = BinaryThreshold(neural_layers[size-1].activated_output_matrix);
     std::cout << "Final Binary Predictions:" << std::endl;
     Matrix::Print(binaryPredictions);
+
+    // Plot MSE vs Iterations graph
+    MSEGraphPlotter::plotMSEvsIterations(mse_values, iteration_points);
 }
 
 
