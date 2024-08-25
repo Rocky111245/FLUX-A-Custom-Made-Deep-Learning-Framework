@@ -1,0 +1,12 @@
+
+/cmake-build-debug-coverage/.cmake/api/v1/query
+*.json
+*.exe
+*.txt
+*.bin
+*.cmake
+*.gcda
+/cmake-build-debug-coverage/CMakeFiles/3.26.4/CompilerIdCXX
+/cmake-build-debug-coverage
+/cmake-build-debug
+/.idea

@@ -1,35 +1,52 @@
-#include <iostream>
 #include <vector>
 #include "Neural Network Framework.h"
-#include "Excel.h"
+#include "MSEGraphPlotter.h"
+#include "NNStructureVis .h"
 
 
 
 int main() {
-    try {
-        // The full path to the CSV file including the filenameInput and its extension
-        std::string filenameInput = R"(D:\Software\Machine Learning\Datasets\redWine.csv)";
-        int num_rows_input = 1200;  // The number of rows to read, excluding the header
-        int num_columns_input = 11;  // The number of columns to read
-        std::string filenameOutput = R"(D:\Software\Machine Learning\Datasets\redWineOutput.csv)";
-        int num_rows_output = 1200;  // The number of rows to read, excluding the header
-        int num_columns_output = 1;  // The number of columns to read
+    // 4-bit Parity Test
+    std::vector<std::vector<float>> inputData = {
+            {0, 0, 0, 0, 0},
+            {0, 0, 0, 1, 1},
+            {0, 0, 1, 0, 1},
+            {0, 0, 1, 1, 0},
+            {0, 1, 0, 0, 1},
+            {0, 1, 0, 1, 0},
+            {0, 1, 1, 0, 0},
+            {0, 1, 1, 1, 1},
+            {1, 0, 0, 0, 1},
+            {1, 0, 0, 1, 0},
+            {1, 0, 1, 0, 0},
+            {1, 0, 1, 1, 1},
+            {1, 1, 0, 0, 0},
+            {1, 1, 0, 1, 1},
+            {1, 1, 1, 0, 1},
+            {1, 1, 1, 1, 0}
+    };
 
-        // Call the function to read the CSV and convert it to a matrix
-       Matrix input=From_CSV_To_Matrix(filenameInput, num_rows_input, num_columns_input);
-       Matrix output=From_CSV_To_Matrix(filenameOutput, num_rows_output, num_columns_output);
 
-       std::vector<Neural_Layer> network = Form_Network({15,1}, input);
-       Learn(network,{15,1},output,0.0001,200000);
+// first 4 columns are the input. the last column is the output. The goal is to see if my neural network framework can model this non-linear input.
 
 
+    Matrix input_matrix = Matrix_Data_Preprocessor(16, 4, 0, 0, inputData);
+    //Matrix::Print(input_matrix);
+    Matrix output_matrix = Matrix_Data_Preprocessor(16, 1, 4, 0, inputData);
+    //Matrix::Print(output_matrix);
 
-    } catch (const std::runtime_error& e) {
-        std::cerr << "Error: " << e.what() << std::endl;
-        return 1; // Return an error code
-    }
 
-    return 0; // Return success
+    // Create a neural network of 4 input neurones (implicit) and a hidden layer of 8 neurones,followed by 4 and output neurone of 1
+    auto neural_layer_information = Form_Network({8,4, 1}, input_matrix, output_matrix, ActivationType::LEAKY_RELU, ActivationType::SIGMOID);
+
+    // Visualize the neural network structure
+    NNStructureVis::visualizeNetwork(neural_layer_information);
+
+    // Train the network (this will later the MSE graph at the end)
+    // learning rate is 0.01 and iteration is 350000
+    Learn(neural_layer_information, 0.01, 350000);
+
+    return 0;
 }
 
 
